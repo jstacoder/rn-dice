@@ -1,0 +1,18 @@
+{
+  "main": "node_modules/expo/AppEntry.js",
+  "private": true,
+  "dependencies": {
+    "boardgame.io": "file:../boardgame.io/dist",
+    "expo": "^26.0.0",
+    "native-base": "^2.4.1",
+    "react": "16.3.0-alpha.1",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-26.0.0.tar.gz",
+    "redux": "^3.7.2",
+    "socket.io": "^2.1.0",
+    "socket.io-client": "^2.1.0",
+    "styled-components": "^3.2.5"
+  },
+  "scripts": {
+    "start": "exp start -c"
+  }
+}
