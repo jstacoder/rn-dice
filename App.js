@@ -9,23 +9,31 @@ import {
   AppIntro,
 } from './Containers'
 
-import { AppGame } from './AppGame'
+import createReactContext from 'create-react-context'
+
+export const ResetContext = createReactContext(()=>{})
+
+import BaseBoard from './BaseBoard'
+import AppGame  from './AppGame'
+import PlayerPicker from './PlayerPicker'
+
+
+
 
 class App extends Component {
+  state = {numPlayers: 0}
+  setPlayers = numPlayers =>{
+    this.setState({numPlayers})
+  }
   render() {
+    if(this.state.numPlayers===0){
+      return (<PlayerPicker setPlayers={this.setPlayers} /> ) 
+    }
     return (
-      <AppContainer>
-        <AppHeader>
-          {/* <SvgUri svgXmlData={Logo} height={85} width={65} /> */}
-          <AppTitle>Welcome to a React app</AppTitle>
-
-        </AppHeader>
-        <AppIntro>
-          To get started, edit src/App.js and save to reload.
-        </AppIntro>
-        <AppGame />
-      </AppContainer>
-    );
+      <ResetContext.Provider value={this.setPlayers}>
+          <AppGame numPlayers={this.state.numPlayers} />
+     </ResetContext.Provider>
+    )    
   }
 }
 

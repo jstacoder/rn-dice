@@ -3,6 +3,7 @@
   "private": true,
   "dependencies": {
     "boardgame.io": "file:../boardgame.io/dist",
+    "create-react-context": "^0.2.1",
     "expo": "^26.0.0",
     "native-base": "^2.4.1",
     "react": "16.3.0-alpha.1",

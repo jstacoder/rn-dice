@@ -1,7 +1,7 @@
 import { Game, Random } from 'boardgame.io/core'
 
 export default Game({
-  setup:()=>({scores: [0,0], held:[], dice:Array(6).fill(0)}),
+  setup:(n)=>({scores: Array(n).fill(0), dice:Array(6).fill(1)}),
   moves:{
     roll:(G, ctx)=> ({...G, dice: Random.D6(G.dice.length) }),
     addHeld:(G, ctx, idx, num)=>{
@@ -21,11 +21,10 @@ export default Game({
       })]
       return {...G, held}
     },
-    add:(G, ctx, idx, num)=> G.map((n, i)=>{
-      if(i !== idx){
-        return n
-      }
-      return n + num
-    })
+
+    keepScore: (G, ctx, score)=>{
+    let scores = [...G.scores]
+    scores[ctx.currentPlayer] = score
+    return {...G, scores: [...scores]}
   }
-})
+}})

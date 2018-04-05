@@ -1,10 +1,20 @@
-
+import React from 'react'
 import { ReactNativeClient } from 'boardgame.io/react-native'
-import Board from './Board'
+import BaseBoard from './BaseBoard'
 import Game from './Game'
 
-export const AppGame = ReactNativeClient({
-  game: Game,
-  board: Board,
-  multiplayer: false,
-})
+
+export default class AppGame extends React.Component{
+  render(){
+    const Client = ReactNativeClient({
+      game: Game,
+      board: BaseBoard,
+      numPlayers:this.props.numPlayers,
+      multiplayer: false,
+    })
+    return (
+      <Client />
+    )
+  }
+}
+
