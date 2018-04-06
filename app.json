@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "rn-dice",
+    "name": "react-native-tenthousand",
     "description": "This project is really great.",
     "slug": "rn-dice",
     "privacy": "public",
@@ -21,7 +21,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier":"com.jstacoder.react-native-tenthousand"
     }
   }
 }
