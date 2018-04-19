@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,8 +18,10 @@ import {
   Header,
   Content,
   H2,
-  Right
+  Right,
+  
 } from 'native-base'; // 2.4.1
+import { Divider } from 'react-native-elements'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Col, Row, Grid } from 'react-native-easy-grid'; // 0.1.17
 // import { Random } from 'boardgame.io/core'; // 0.21.5
@@ -68,9 +70,9 @@ export default class BaseBoard extends Component {
     }
     return rtn
   }
-  static resetState = (scores=[]) =>({ hasHeld: false, scores, dice: Array(6).fill(1), held: [], heldMap: BaseBoard.resetHeldMap(6) })
+  static resetState = (scores=[]) =>({ rolling: false, hasHeld: false, initialRoll: true, scores, held: [], heldMap: BaseBoard.resetHeldMap(6) })
   getHeldScore = () =>{
-    const held = this.state.dice.filter((d, i)=> this.state.heldMap[i])
+    const held = this.props.G.dice.filter((d, i)=> this.state.heldMap[i])
     return scoreRoll(held)
   }
   getRunningScore = (score = 0) =>{
@@ -80,7 +82,8 @@ export default class BaseBoard extends Component {
     return this.getRunningScore(score)
   }
   roll = () => {
-    let dice = [...this.state.dice]
+
+    let dice = [...this.props.G.dice]
     let held = []
     let scores = [...this.state.scores]
     
@@ -95,20 +98,25 @@ export default class BaseBoard extends Component {
       let score = {score: scoreRoll(held), held}    
       scores.push(score)
     }
-    const newDice = roll(rollCount||6)
-    const cid = setInterval(()=>{
-      this.setState({scores: [...scores], dice: roll(rollCount||6) , heldMap: BaseBoard.resetHeldMap(rollCount||6)});
-    },100)
-    setTimeout(()=>{
-      this.setState({scores: [...scores], dice: [...newDice]})
-      clearInterval(cid)
-    }, 2500)    
+    this.props.moves.roll(this.state.initialRoll)
+    const newDice = [...this.props.G.dice]
+    this.setState({rolling: true},()=>{
+      const cid = setInterval(()=>{
+        this.props.moves.roll() 
+        this.setState({scores: [...scores], heldMap: BaseBoard.resetHeldMap(rollCount||6)});
+      },100)
+      setTimeout(()=>{
+        this.setState({hasHeld: false, initialRoll: false, rolling: false, scores: [...scores]})
+        clearInterval(cid)
+     }, 2500)    
+    })
   }
   endTurn = () =>{
     this.setState({...BaseBoard.resetState()})
     this.props.events.endTurn()
   }
-  unHold = idx=>{
+  unHold = (die,idx)=>{
+    this.props.moves.removeHeld(idx, die)
     this.setState({heldMap: {...this.state.heldMap, [idx]: false}},()=>{
       if(Object.keys(this.state.heldMap).filter(x=>this.state.heldMap[x]).length==0){
         this.setState({hasHeld: false})
@@ -116,7 +124,8 @@ export default class BaseBoard extends Component {
     })
   }
   hold = (die, idx) =>{
-    let dice = [...this.state.dice.map((d,i)=>{
+    this.props.moves.addHeld(idx, die)
+    let dice = [...this.props.G.dice.map((d,i)=>{
       if(this.state.heldMap[i]){
         return undefined
       }
@@ -135,29 +144,47 @@ export default class BaseBoard extends Component {
       })
     }
   }
+  rolledDoubles = () =>{    
+      const { dice } = this.props.G
+      if(dice.length !== 2){
+        return false
+      }
+      const [die1, die2] = dice
+      return die1 === die2
+    }  
+  disableRoll = () =>{
+    let disable = this.state.rolling
+    if(!this.state.hasHeld&&!this.props.G.initialRoll){
+      disable = true
+    }
+    if(disable && !this.state.rolling){
+      return !this.rolledDoubles(this.props.G)
+    }
+    return disable
+  }
   renderDice = () => {
-    const [die1, die2, die3, die4, die5, die6] = this.state.dice;
+    const [die1, die2, die3, die4, die5, die6] = this.props.G.dice;
     const topRow = [die1, die2, die3]
     const bottomRow = [die4, die5, die6]
     let rtn = (
       <Col>
         <Row>          
-          <React.Fragment>                  
+          <Fragment>                  
           <Row size={3}><Text>{' '}</Text></Row>
           {topRow.map((die, idx)=>(
-            <Die value={die} key={`dieset1-${idx}`} unHold={()=>this.unHold(idx)} hold={()=>this.hold(die,idx)} held={this.state.heldMap[idx]} />
+            <Die value={die} key={`dieset1-${idx}`} unHold={()=>this.unHold(die,idx)} hold={()=>this.hold(die,idx)} held={this.state.heldMap[idx]} />
           ))}                              
           <Row size={3}><Text /></Row>
-          </React.Fragment>
+          </Fragment>
         </Row>
         <Row>
-        <React.Fragment> 
+        <Fragment> 
           <Row size={3}><Text>{' '}</Text></Row>
           {bottomRow.map((die, idx)=>(
-            <Die value={die} key={`dieset2-${idx}`} unHold={()=>this.unHold(idx+3)} hold={()=>this.hold(die,idx+3)} held={this.state.heldMap[idx+3]} />
+            <Die value={die} key={`dieset2-${idx}`} unHold={()=>this.unHold(die,idx+3)} hold={()=>this.hold(die,idx+3)} held={this.state.heldMap[idx+3]} />
           ))}                              
           <Row size={3}><Text>{' '}</Text></Row>
-          </React.Fragment> 
+          </Fragment> 
         </Row>
       </Col>
     )
@@ -168,6 +195,7 @@ export default class BaseBoard extends Component {
     this.endTurn()
   }
   render() {
+    const rollDisabled = this.disableRoll()
     return (
       <ResetContext.Consumer>
         {setPlayers =>(
@@ -193,13 +221,18 @@ export default class BaseBoard extends Component {
                   <CardItem>
                     <H2>running score</H2><Right><H2>{this.getRunningScore()}</H2></Right>                    
                   </CardItem>
+                  <Divider/>
                   <CardItem>
                     <H2>current player</H2><Right><H2>{(this.props.ctx.currentPlayer*1)+1}</H2></Right>
                   </CardItem>                  
+                  <Divider/>
+                  <CardItem>
+                    <H2>running total</H2><Right><H2>{this.getTempScore(this.props.G.scores[this.props.ctx.currentPlayer])}</H2></Right>
+                  </CardItem>
                 </Card>
               </Row>                         
                 <Row size={3}><Text>{' '}</Text></Row>
-                <Button full onPress={this.roll}><Text>Roll</Text></Button>
+                <Button full disabled={rollDisabled} onPress={this.roll}><Text>Roll</Text></Button>
                 <Row size={3}><Text>{' '}</Text></Row>
                 {this.renderDice()}
                 <Row size={3}><Text>{' '}</Text></Row>
